@@ -1,0 +1,108 @@
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "5.1.0"
+    id 'org.springframework.boot' version '2.3.3.RELEASE'
+	id 'jacoco'
+	id 'pmd'
+}
+
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.3.0.RELEASE'
+    implementation 'javax.persistence:javax.persistence-api:2.2'
+    implementation 'org.projectlombok:lombok:1.18.12'
+    implementation 'org.apache.commons:commons-math3:3.5'
+    implementation 'com.h2database:h2:1.4.200'
+    implementation 'org.jdbi:jdbi3-core:3.14.1'
+//    testImplementation 'org.seleniumhq.selenium:selenium-java:3.141.59'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.3.0.RELEASE'
+//    testImplementation 'io.github.bonigarcia:webdrivermanager:3.8.1'
+//    testImplementation 'org.assertj:assertj-core:3.16.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.1'
+	testImplementation 'org.mockito:mockito-core:3.5.13'
+}
+
+
+group = 'edu.depail.se433'
+version = '0.0.1-SNAPSHOT'
+description = 'shopping-app'
+sourceCompatibility = '11'
+
+def user = 'Wxu19'
+
+
+bootJar {
+    mainClassName = 'edu.depaul.se433.shoppingapp.ShoppingAppApplication'
+}
+
+jacoco {
+    reportsDir = file("$buildDir/jacoco")
+}
+pmd {
+    consoleOutput = true
+    toolVersion = "6.21.0"
+    rulePriority = 3
+    ignoreFailures = true
+    ruleSets = [
+            "category/java/errorprone.xml",
+            "category/java/bestpractices.xml",
+            "category/java/design.xml"
+    ]
+}
+def test = tasks.named("test") {
+
+    useJUnitPlatform ()
+    ignoreFailures(true)
+
+    afterTest { desc, result ->
+        logger.quiet "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+    }
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+}
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.0
+            }
+        }
+    }
+}
+
+
+task packageDistribution(type: Zip) {
+    dependsOn test
+    archiveFileName = "${user}-${rootProject.name}.zip"
+    destinationDirectory = file("$buildDir/dist")
+
+    from("$projectDir") {
+        include "src/**/*"
+        include "build.gradle"
+        include "gradlew"
+        include "gradlew.bat"
+        include "settings.gradle"
+		include "build/jacoco/**/*"
+		include "build/reports/**/*"
+    }
+
+    into("${user}-${rootProject.name}")
+}
+
+check {
+    finalizedBy packageDistribution
+	dependsOn {
+        jacocoTestCoverageVerification
+    }
+}
+
+
